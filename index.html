@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammatikk A2 - MovED Læringsportal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+
+        .tile-card {
+            transition: all 0.25s ease;
+            cursor: pointer;
+        }
+
+        .tile-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.08);
+        }
+
+        .content-area {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .bg-ordklassene { background-color: #f0f9ff; border: 1px solid #e0f2fe; color: #0369a1; }
+        .bg-setninger { background-color: #f0fdf4; border: 1px solid #dcfce7; color: #15803d; }
+        .bg-helsetninger { background-color: #fffbeb; border: 1px solid #fef3c7; color: #a16207; }
+        .bg-leddsetninger { background-color: #faf5ff; border: 1px solid #f3e8ff; color: #7e22ce; }
+        .bg-sammensatte { background-color: #fff1f2; border: 1px solid #ffe4e6; color: #be123c; }
+        .bg-tegnsetting { background-color: #f8fafc; border: 1px solid #f1f5f9; color: #334155; }
+
+        .feedback-correct { background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .feedback-wrong { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+        .breadcrumb-item:not(:last-child)::after {
+            content: '/';
+            margin: 0 8px;
+            color: #cbd5e1;
+        }
+
+        input[type="text"] {
+            text-transform: lowercase;
+        }
+
+        .timer-bar {
+            transition: width 1s linear;
+        }
+
+        .drop-zone {
+            min-height: 60px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background: #f1f5f9;
+        }
+
+        .word-pill {
+            padding: 0.5rem 1rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 9999px;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <button onclick="showMainMenu()" class="text-slate-800 font-bold text-lg flex items-center gap-2">
+                    <i class="fas fa-graduation-cap text-indigo-600"></i>
+                    <span class="hidden sm:inline">- MovED - A2 læringsportal</span>
+                </button>
+                <div id="breadcrumb-nav" class="hidden md:flex text-sm text-slate-500 ml-4"></div>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-2 bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100">
+                    <i class="fas fa-trophy text-yellow-500 text-sm"></i>
+                    <span id="total-score-display" class="font-bold text-slate-700">0</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
+        <div id="main-menu" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+        <div id="sub-menu" class="hidden content-area">
+            <div class="flex items-center justify-between mb-8">
+                <h2 id="sub-menu-title" class="text-3xl font-bold text-slate-800"></h2>
+                <button onclick="showMainMenu()" class="text-sm font-medium text-slate-500 hover:text-indigo-600 flex items-center gap-2">
+                    <i class="fas fa-chevron-left"></i> Tilbake til meny
+                </button>
+            </div>
+            <div id="sub-menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+
+        <div id="content-view" class="hidden content-area max-w-4xl mx-auto">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-8 md:p-12">
+                    <button onclick="goBackToSubMenu()" class="mb-8 flex items-center text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i> Tilbake til oversikt
+                    </button>
+                    <h2 id="content-title" class="text-4xl font-black mb-8 text-slate-900 leading-tight"></h2>
+                    <div id="content-body" class="prose prose-slate prose-lg max-w-none text-slate-600 leading-relaxed whitespace-pre-wrap mb-12"></div>
+                    
+                    <div class="border-t border-slate-100 pt-10 text-center">
+                        <div class="bg-indigo-50 p-10 rounded-3xl inline-block w-full max-w-2xl">
+                            <h4 class="text-xl font-bold text-indigo-900 mb-2">Test din kunnskap</h4>
+                            <p class="text-indigo-700 mb-6 text-sm">Gjør 5 interaktive oppgaver knyttet til temaet over.</p>
+                            <button onclick="startQuizFromContent()" class="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-3 mx-auto">
+                                <i class="fas fa-play"></i> Start oppgaver
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="quiz-view" class="hidden content-area max-w-3xl mx-auto">
+            <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+                <div class="bg-slate-50 px-8 py-6 border-b border-slate-100 flex justify-between items-center">
+                    <div>
+                        <span id="quiz-progress-text" class="text-xs font-bold text-slate-400 uppercase tracking-widest"></span>
+                        <h3 id="quiz-task-title" class="text-xl font-bold text-slate-800"></h3>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex items-center gap-3 justify-end mb-1">
+                             <i class="fas fa-clock text-indigo-500 animate-pulse"></i>
+                             <span id="quiz-timer-text" class="text-2xl font-mono font-bold text-slate-700">20s</span>
+                        </div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">Mulig score: <span id="potential-score" class="text-indigo-600">100</span></div>
+                    </div>
+                </div>
+
+                <div class="h-1.5 w-full bg-slate-100">
+                    <div id="timer-progress" class="h-full bg-indigo-500 timer-bar" style="width: 100%"></div>
+                </div>
+
+                <div class="p-8 md:p-12 min-h-[380px]">
+                    <div id="quiz-container"></div>
+                </div>
+
+                <div class="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                    <button onclick="goBackToContent()" class="text-slate-400 hover:text-slate-600 font-medium text-sm">Avbryt</button>
+                    <button id="next-btn" onclick="checkAnswer()" class="bg-indigo-600 text-white px-10 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg">Sjekk svar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-view" class="hidden content-area max-w-xl mx-auto text-center py-12">
+            <div class="bg-white rounded-3xl shadow-xl p-12 border border-slate-100">
+                <div class="w-20 h-20 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-medal text-3xl text-yellow-500"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">Ferdig!</h2>
+                <p id="res-feedback-text" class="text-slate-500 mb-8"></p>
+                <p class="text-slate-400 text-sm mb-4">Oppgavesett fullført for <span id="res-cat" class="font-bold text-slate-700"></span></p>
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <p class="text-xs font-bold text-slate-400 uppercase mb-1">Dine poeng</p>
+                        <p id="res-score" class="text-3xl font-black text-indigo-600">0</p>
+                    </div>
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <p class="text-xs font-bold text-slate-400 uppercase mb-1">Riktige</p>
+                        <p id="res-correct" class="text-3xl font-black text-slate-700">0/5</p>
+                    </div>
+                </div>
+                <button onclick="goBackToSubMenu()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition-all">Gå tilbake</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="feedback-toast" class="hidden fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] px-8 py-4 rounded-2xl shadow-xl flex items-center gap-4 transition-all duration-300">
+        <i id="feedback-icon" class="fas text-xl"></i>
+        <div class="text-left">
+            <p id="feedback-title" class="font-bold text-sm"></p>
+            <p id="feedback-msg" class="text-xs opacity-80"></p>
+        </div>
+    </div>
+
+    <script>
+        let totalScore = parseInt(localStorage.getItem('norskScore_final')) || 0;
+        let sessionScore = 0;
+        let correctInSession = 0;
+        let currentSubIndex = 0;
+        let currentCategory = "";
+        let currentItem = "";
+        let quizAnswers = [];
+        let timeLeft = 20;
+        let timerInterval = null;
+        let potentialPoints = 100;
+
+        function updateScoreDisplay() {
+            const display = document.getElementById('total-score-display');
+            if (display) {
+                display.innerText = totalScore;
+                localStorage.setItem('norskScore_final', totalScore);
+            }
+        }
+
+        const grammarData = {
+            "Ordklassene": {
+                icon: "fa-cubes", colorClass: "bg-ordklassene",
+                description: "Grunnleggende byggesteiner i språket.",
+                items: {
+                    "Verb": {
+                        text: "Verb er hjertet i enhver setning på norsk, da de forteller oss om handling, tilstand eller prosess. Uten et verb kan vi ikke ha en fullstendig norsk setning. Vi deler verb inn i ulike tider for å vise når noe skjer. Presens brukes for nåtid, mens preteritum brukes for fortid. På A2-nivå er det viktig å lære både regelmessige og uregelmessige verb. De regelmessige følger faste mønstre som gjør bøyningen forutsigbar. De uregelmessige må derimot læres utenat fordi de endrer seg på uventede måter. For eksempel blir 'å snakke' til 'snakker' i presens og 'snakket' i preteritum. Et uregelmessig eksempel er 'å gå', som blir 'går' og 'gikk'. Vi bruker ofte hjelpeverb som 'skal', 'vil' og 'kan' for å snakke om fremtiden eller muligheter. Når vi bruker et hjelpeverb, skal hovedverbet stå i infinitiv uten 'å'. 'Jeg skal reise' er korrekt, ikke 'Jeg skal å reise'. Verb kan også brukes i imperativ for å gi direkte ordrer. 'Vask hendene!' er et eksempel på imperativ. Å mestre verbene betyr at du kan plassere handlinger riktig i tidsskjemaet. Dette er avgjørende for all kommunikasjon. Vi har også refleksive verb som krever et pronomen, som i 'å glede seg'. Noen verb fungerer som tilstandsverb, mens andre er handlingsverb. I en vanlig helsetning står verbet alltid på plass nummer to. Dette kalles V2-regelen og er en av de viktigste reglene i norsk. Øv deg på å bøye verbene i grupper slik at mønstrene sitter. Husk at perfektum partisipp brukes sammen med 'har' for å beskrive fortid med relevans for nåtiden. Verbene gir liv og bevegelse til språket ditt. Ved å utvide verb-forrådet ditt blir du en mye flinkere språkbruker. Lær deg de hundre mest brukte verbene først. Da vil du kunne forstå og produsere de fleste hverdagssetninger.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Velg riktig presensform: Jeg ___ med læreren nå.", options: ["snakker", "snakket", "snakke"], a: "snakker" },
+                            { type: 'choice', q: "Hva er preteritum av 'å gå'?", options: ["går", "gikk", "gått"], a: "gikk" },
+                            { type: 'boolean', q: "Et verb forteller om handling eller tilstand.", a: true },
+                            { type: 'unscramble', q: "reiser / Jeg / Bergen / til / skal", a: "jeg skal reise til bergen" },
+                            { type: 'choice', q: "Hva er imperativ av 'å vaske'?", options: ["vasker", "vasket", "vask"], a: "vask" }
+                        ]}
+                    },
+                    "Substantiv": {
+                        text: "Substantiv er ord som gir navn til ting, mennesker, steder og begreper i verden rundt oss. På norsk er det helt sentralt å vite kjønnet på substantivet for å bruke språket korrekt. Vi har tre kjønn: hankjønn (en), hunkjønn (ei) og intetkjønn (et). Kjønnet bestemmer hvordan artikler, adjektiver og pronomen bøyes sammen med ordet. Vi skiller mellom fellesnavn som 'en bil' og egennavn som 'Oslo'. Substantiv bøyes i entall og flertall, samt ubestemt og bestemt form. Hvis vi snakker om noe for første gang, bruker vi ubestemt form: 'Jeg ser en katt'. Når vi snakker om den samme tingen igjen, bruker vi bestemt form: 'Katten er svart'. Flertall dannes ofte ved å legge til -er i ubestemt form. Noen intetkjønnsord med én stavelse får ingen endelse i flertall ubestemt. 'Et hus' blir til 'mange hus'. Dette er en detalj som mange elever synes er vanskelig i starten. Vi har også uregelmessige substantiv som endrer vokal i flertall. 'En mann' blir 'menn', og 'ei bok' blir 'bøker'. Ved å lære substantivene grundig bygger du grunnmuren i ordforrådet ditt. Husk å alltid lære artikkelen sammen med ordet når du lærer nye ord. Det er mye vanskeligere å lære kjønnet senere hvis du har lært ordet feil. Substantiv kan også være abstrakte, som 'kjærlighet' eller 'frihet'. Disse brukes sjelden i flertall på samme måte som konkrete ting. I norsk bruker vi 'bestemthet' mye mer aktivt enn i mange andre språk. Det er viktig å øve på de fire formene: ubestemt entall, bestemt entall, ubestemt flertall og bestemt flertall. Prøv å lage setninger med alle formene av et ord. Legg merke til hvordan substantivet endrer seg i tekstene du leser hver dag. Mestring av substantivbøyning gir deg en trygghet når du snakker og skriver.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Hvilken artikkel hører til 'hus'?", options: ["en", "ei", "et"], a: "et" },
+                            { type: 'choice', q: "Bestemt form entall av 'stol'?", options: ["stolen", "stola", "stolet"], a: "stolen" },
+                            { type: 'boolean', q: "Egennavn skrives alltid med stor forbokstav.", a: true },
+                            { type: 'choice', q: "Flertall ubestemt av 'et hus'?", options: ["huser", "huset", "hus"], a: "hus" },
+                            { type: 'unscramble', q: "bilen / rød / er", a: "bilen er rød" }
+                        ]}
+                    },
+                    "Adverb": {
+                        text: "Adverb er ord som gir oss mer informasjon om verb, adjektiv eller hele setninger. De forteller oss typisk om tid, sted, måte eller grad. Eksempler på tidsadverb er 'nå', 'da' og 'alltid'. Stedsadverb forteller hvor noe skjer, som 'her', 'der' eller 'hjemme'. Måtesadverb beskriver hvordan en handling utføres, som 'fort' eller 'pent'. En spesielt viktig gruppe på norsk er setningsadverbene, med 'ikke' som det mest brukte. Setningsadverb kan endre betydningen av en hel setning fra positiv til negativ. Adverbene hjelper oss også å gradere adjektiver, som i 'Han er veldig snill'. Her forsterker adverbet 'veldig' egenskapen til personen. Plasseringen av adverb i setningen er svært viktig for ordstillingen på norsk. I en helsetning står 'ikke' etter verbet, mens i en leddsetning står det foran verbet. Adverb kan også bøyes i grader som adjektiver: 'fort – fortere – fortest'. Mange adverb dannes av adjektiv ved å legge til en -t på slutten. 'Fin' (adjektiv) blir 'fint' (adverb) i setningen 'Hun synger fint'. Uten adverb ville språket vårt vært flatt og manglet mange nyanser. De lar oss uttrykke oss mer detaljert om tid og rom. Noen adverb fungerer som bindeledd mellom setninger og kalles konjunksjonale adverb. 'Derfor' og 'allikevel' er gode eksempler på dette. Å bruke varierte adverb gjør deg til en mer presis språkbruker. Det er lurt å lære seg plassen til setningsadverbene tidlig. Legg merke til forskjellen på 'hjem' (bevegelse) og 'hjemme' (ro). Dette er en vanlig utfordring for mange. Ved å mestre adverbene kan du gi mye mer levende beskrivelser. Prøv å bruke minst ett adverb i hver setning du skriver for å øve.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Finn tidsadverbet:", options: ["pent", "her", "nå"], a: "nå" },
+                            { type: 'choice', q: "Finn setningsadverbet i 'Jeg kommer ikke'?", options: ["jeg", "kommer", "ikke"], a: "ikke" },
+                            { type: 'boolean', q: "Adverb kan beskrive et verb.", a: true },
+                            { type: 'unscramble', q: "fort / løper / han", a: "han løper fort" },
+                            { type: 'choice', q: "Hvor står 'ikke' i en vanlig helsetning?", options: ["før verbet", "etter verbet"], a: "etter verbet" }
+                        ]}
+                    },
+                    "Adjektiv": {
+                        text: "Adjektiv er ord som beskriver egenskaper ved substantiv og gjør språket fargerikt og detaljert. På norsk må adjektivet samsvarsbøyes, som betyr at det må passe til substantivets kjønn og tall. Vi sier 'en snill gutt', men 'et snilt barn' og 'to snille jenter'. Denne bøyningen kalles ubestemt bøyning. I tillegg har vi bestemt bøyning av adjektiv når substantivet er i bestemt form. Da ender adjektivet nesten alltid på -e: 'den snille gutten', 'det store huset'. Adjektiv kan også gradbøyes for å sammenligne ting. Vi har tre grader: positiv, komparativ og superlativ. 'Fin – finere – finest' er et typisk eksempel. Komparativ brukes når vi sammenligner to ting: 'Denne bilen er raskere enn den andre'. Superlativ brukes når vi peker ut den som har mest av en egenskap: 'Dette er den beste boka'. Noen adjektiv er uregelmessige i gradbøyningen, som 'god – bedre – best'. Det er også viktig å huske predikativ bøyning, når adjektivet står etter 'er' eller 'blir'. 'Bilen er rød', men 'huset er rødt'. Adjektivene hjelper oss å uttrykke følelser, vurderinger og fysiske beskrivelser. Uten dem ville vi ikke kunne skille mellom en 'varm dag' og en 'kald dag'. Mange adjektiv på norsk ender på -ig eller -lig, og disse får ofte ikke -t i intetkjønn. 'Et hyggelig hus', ikke 'et hyggelig-t hus'. Å lære disse unntakene tar tid, men det gir et mye mer korrekt inntrykk. Ved å bruke varierte adjektiv viser du et godt ordforråd på A2-nivå. Prøv å lære motsetninger (antonymer) som 'stor – liten' eller 'dyr – billig'. Det er en effektiv måte å utvide språket på. Husk at adjektivet alltid beskriver et substantiv eller pronomen. Øv på å bruke adjektiver i både ubestemt og bestemt form.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Bøyning: Et ___ barn.", options: ["snill", "snilt", "snille"], a: "snilt" },
+                            { type: 'choice', q: "Bøyning: To ___ biler.", options: ["rød", "rødt", "røde"], a: "røde" },
+                            { type: 'boolean', q: "Komparativ av 'fin' er 'finere'.", a: true },
+                            { type: 'choice', q: "Superlativ av 'god'?", options: ["godere", "best", "godest"], a: "best" },
+                            { type: 'unscramble', q: "huset / er / stort", a: "huset er stort" }
+                        ]}
+                    },
+                    "Pronomen": {
+                        text: "Pronomen er praktiske småord som fungerer som vikarer for substantiv i setningen. De sparer oss for tid og hindrer at språket blir kjedelig og gjentakende. Personlige pronomen deles inn i subjektform og objektform. Vi bruker subjektform (jeg, du, han, hun, den, det, vi, dere, de) når pronomenet er den som gjør noe. Vi bruker objektform (meg, deg, ham, henne, den, det, oss, dere, dem) når noe skjer med personen eller tingen. For eksempel: 'Jeg ser ham'. Her er 'jeg' den aktive og 'ham' den som blir sett. Pronomenet 'man' eller 'en' brukes når vi snakker generelt om folk, som i 'Man må sove for å leve'. Det er spesielt viktig å lære forskjellen på 'de' og 'dem', da dette er en vanlig feilkilde. Vi har også refleksive pronomen som 'seg', som brukes når subjektet og objektet er den samme personen. 'Han vasker seg'. Pronomen hjelper oss å holde tråden i en samtale eller tekst over lengre tid. Uten pronomen måtte vi ha sagt 'Per ser Kari. Per snakker til Kari'. Med pronomen sier vi 'Per ser Kari. Han snakker til henne'. Vi har også høflighetsformer, men disse brukes sjelden i moderne norsk i dag. Lær deg alle formene i både entall og flertall grundig. Husk at 'den' og 'det' brukes om ting, avhengig av tingens kjønn. 'Boka' er den, 'huset' er det. Å velge riktig pronomen viser at du har god kontroll på grammatikken. Det gjør også at du høres mer naturlig ut. Prøv å bytte ut substantiv med pronomen når du skriver små tekster. Vær oppmerksom på at pronomen etter preposisjoner alltid skal stå i objektform. 'Boka er til meg', ikke 'Boka er til jeg'.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Hva er objektformen av 'han'?", options: ["ham", "han", "henne"], a: "ham" },
+                            { type: 'choice', q: "Hva er subjektformen av 'oss'?", options: ["vi", "dere", "de"], a: "vi" },
+                            { type: 'boolean', q: "Pronomenet 'man' brukes om folk generelt.", a: true },
+                            { type: 'unscramble', q: "henne / ser / han", a: "han ser henne" },
+                            { type: 'choice', q: "Hvilket pronomen er 2. person flertall?", options: ["vi", "dere", "de"], a: "dere" }
+                        ]}
+                    },
+                    "Preposisjoner": {
+                        text: "Preposisjoner er ord som uttrykker forholdet mellom ulike ledd i en setning, ofte knyttet til tid eller sted. De er korte, men har en enorm betydning for meningen i det vi sier. Vanlige eksempler er i, på, til, fra, bak, over og under. For mange som lærer norsk, er preposisjoner det mest utfordrende feltet. Dette er fordi det ikke alltid finnes faste logiske regler som gjelder i alle situasjoner. Ved stedsnavn bruker vi ofte 'i' for land og byer, men 'på' for øyer og steder i innlandet. Vi sier 'i Oslo', men 'på Hamar'. Dette skyldes historiske tradisjoner. Preposisjoner brukes også mye for å angi tid. 'Om to timer' viser til fremtid, mens 'for to timer siden' viser til fortid. Vi bruker også preposisjoner i faste uttrykk sammen med verb. 'Å tenke på', 'å lure på' eller 'å glede seg til' er eksempler på dette. Hvis du bruker feil preposisjon, kan setningen bli helt feil eller høres unaturlig ut. Det er derfor viktig å lese mye slik at du får en intuitiv følelse for hvilke ord som hører sammen. Preposisjoner kan ikke bøyes og står alltid foran et substantiv eller et pronomen. Husk at pronomen etter preposisjon skal stå i objektform. 'Hun snakker til meg'. Å mestre preposisjoner krever mye mengdetrening og tålmodighet. Det er lurt å lære seg de vanligste stedsuttrykkene først. Se på bilder og beskriv hvor ting er plassert ved hjelp av preposisjoner. 'Katten ligger under stolen'. Ved å bruke riktige preposisjoner blir språket ditt mye mer presist og forståelig. Prøv å legge merke til preposisjonsbruk i aviser eller bøker. Skriv ned faste kombinasjoner av verb og preposisjoner i en egen bok. Dette vil hjelpe deg i det lange løp.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Jeg bor ___ Oslo.", options: ["på", "i", "til"], a: "i" },
+                            { type: 'choice', q: "Han bor ___ Hamar.", options: ["i", "på", "fra"], a: "på" },
+                            { type: 'boolean', q: "Preposisjoner kan vise både tid og sted.", a: true },
+                            { type: 'choice', q: "Jeg gleder meg ___ ferie.", options: ["på", "til", "om"], a: "til" },
+                            { type: 'unscramble', q: "bordet / boka / ligger / på", a: "boka ligger på bordet" }
+                        ]}
+                    },
+                    "Konjunksjoner": {
+                        text: "Konjunksjoner er bindeord som kobler sammen ord, grupper av ord eller hele setninger som er på samme nivå. De fungerer som små broer i språket vårt og hjelper oss å skape sammenheng. De fem viktigste konjunksjonene på norsk er og, men, eller, for og så. 'Og' bruker vi for å legge sammen to ting: 'Jeg kjøper brød og melk'. 'Men' bruker vi for å vise en motsetning eller en begrensning: 'Jeg er trøtt, men jeg må jobbe'. 'Eller' gir oss et valg mellom alternativer: 'Vil du ha kaffe eller te?'. 'For' forklarer årsaken til noe i en helsetning: 'Han smiler, for han er glad'. 'Så' viser resultatet eller konsekvensen av noe: 'Det snør, så jeg tar på meg lue'. Når vi bruker konjunksjoner til å binde sammen to fullstendige helsetninger, må vi huske at begge setningene må ha sitt eget subjekt og verbal. Det er også god skikk å sette komma foran konjunksjonen hvis setningene er lange. Konjunksjoner er avgjørende for at du skal kunne skrive tekster som flyter godt. Uten dem ville språket bestått av mange korte og hakkete setninger. Ved å koble tanker sammen kan du uttrykke mer komplekse ideer. Husk at 'for' bare brukes som konjunksjon når du forklarer en årsak i en ny helsetning. Hvis du bruker 'fordi', starter du en leddsetning, og da endres ordstillingen. Lær deg de fem hovedkonjunksjonene godt først. De dekker de fleste behov i dagligtalen. Bruk av konjunksjoner gjør at du høres mer voksen ut når du snakker norsk. Det er en enkel måte å heve nivået på språket ditt på. Tren på å kombinere to enkle setninger til én ved hjelp av en konjunksjon. Se hvordan betydningen kan endre seg avhengig av hvilket bindeord du velger.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Hvilken konjunksjon viser motsetning?", options: ["og", "men", "for"], a: "men" },
+                            { type: 'choice', q: "Hvilken viser et resultat?", options: ["eller", "men", "så"], a: "så" },
+                            { type: 'boolean', q: "'Og' brukes for å legge til informasjon.", a: true },
+                            { type: 'choice', q: "Hvilken viser årsak i en helsetning?", options: ["for", "men", "så"], a: "for" },
+                            { type: 'unscramble', q: "kaffe / vil / ha / te / eller / du", a: "vil du ha kaffe eller te" }
+                        ]}
+                    },
+                    "Interjeksjoner": {
+                        text: "Interjeksjoner er en unik gruppe ord som ofte står helt alene, utenfor den vanlige setningsstrukturen. De brukes til å uttrykke følelser, gi signaler, eller etterligne lyder i hverdagen. De er ofte korte, kraftige og svært uttrykksfulle. Eksempler er utrop som 'au!' ved smerte, 'oi!' ved overraskelse, eller 'hurra!' ved feiring. Svarordene våre, 'ja', 'nei' og 'tja', regnes også som interjeksjoner. Det samme gjør vanlige hilsener som 'hei', 'hallo' og 'ha det'. Selv om disse ordene ikke endrer på setningens grammatikk, er de helt essensielle for naturlig kommunikasjon. De fungerer som sosiale smøremidler i en samtale og viser empati eller reaksjon. I skriftlig språk markerer vi ofte interjeksjoner med utropstegn for å vise styrken i uttrykket. Noen interjeksjoner etterligner dyrelyder, som 'mø' eller 'vov-vov'. Andre brukes for å få oppmerksomhet, som 'hei!'. Det finnes også interjeksjoner som brukes når vi tenker oss om, som 'hm' eller 'eh'. Ved å lære deg de vanligste interjeksjonene vil norsken din høres mye mer levende og naturlig ut. De hjelper deg med å reagere raskt på det andre sier uten å måtte formulere lange setninger. På A2-nivå er det lurt å vite hvilke interjeksjoner som passer i ulike situasjoner. For eksempel bruker vi 'uff' når vi synes noe er leit eller slitsomt. Interjeksjoner bøyes aldri og beholder alltid samme form. De er som små 'ferdigpakker' med mening som du kan kaste inn i samtalen. Prøv å lytte til hvordan nordmenn bruker disse småordene i butikken eller på bussen. Det gir deg et godt bilde av den kulturelle språkbruken. Husk at tonefallet er veldig viktig når du bruker interjeksjoner.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Hva sier man når man har vondt?", options: ["hurra", "au", "oi"], a: "au" },
+                            { type: 'boolean', q: "'Ja' og 'Nei' er interjeksjoner.", a: true },
+                            { type: 'choice', q: "Hvilken uttrykker stor glede?", options: ["uff", "hurra", "tja"], a: "hurra" },
+                            { type: 'boolean', q: "Interjeksjoner endrer setningens rekkefølge.", a: false },
+                            { type: 'unscramble', q: "det / ! / ha", a: "ha det !" }
+                        ]}
+                    },
+                    "Subjunksjoner": {
+                        text: "Subjunksjoner ble tidligere kalt underordnende konjunksjoner, og deres hovedoppgave er å starte en leddsetning. De binder leddsetningen fast til en hovedsetning og skaper et avhengighetsforhold. Den vanligste subjunksjonen på norsk er 'at', som vi ofte bruker etter verb for tale eller tanke. 'Jeg tror at det blir sol'. Andre viktige subjunksjoner er de som forklarer årsak, som 'fordi' og 'siden'. 'Jeg blir hjemme fordi jeg er syk'. Vi har også tids-subjunksjoner som 'når' og 'da'. Det er en viktig norsk regel å skille mellom disse: 'Da' brukes om en bestemt tid i fortiden, mens 'når' brukes om fremtiden eller noe som gjentas. Subjunksjoner som 'hvis' og 'dersom' brukes for å uttrykke et vilkår for at noe skal skje. Uten subjunksjoner ville vi ikke kunne forklare kompliserte logiske sammenhenger i språket. De er selve nøkkelen til mer avansert norsk grammatikk og setningsoppbygging. Når du bruker en subjunksjon, må du huske at ordstillingen i leddsetningen endres. Du må følge S-A-V regelen, der 'ikke' kommer før verbet. Dette er en av de største utfordringene for elever på vei mot B1-nivå. Subjunksjoner gjør tekstene dine mer nyanserte og profesjonelle. De lar deg argumentere og begrunne på en strukturert måte. Lær deg de ti mest vanlige subjunksjonene først. De vil dekke det meste av ditt behov for å koble setninger sammen. Husk at en leddsetning aldri kan stå helt alene. Den gir bare mening når den er koblet til en hovedsetning. Prøv å variere bindeordene dine for å unngå gjentakelser. Dette vil gjøre språket ditt rikere og mer interessant.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Brukt om en hendelse i fortiden:", options: ["når", "da", "at"], a: "da" },
+                            { type: 'choice', q: "Brukt for å vise årsak:", options: ["hvis", "fordi", "om"], a: "fordi" },
+                            { type: 'boolean', q: "'At' brukes ofte etter verb for tale eller tanke.", a: true },
+                            { type: 'choice', q: "Brukt for å vise et vilkår:", options: ["hvis", "da", "at"], a: "hvis" },
+                            { type: 'unscramble', q: "hjemme / fordi / jeg / syk / er / blir", a: "jeg blir hjemme fordi jeg er syk" }
+                        ]}
+                    },
+                    "Determinativ": {
+                        text: "Determinativ er en gruppe ord som brukes til å bestemme eller spesifisere substantiv. De står nesten alltid sammen med et substantiv og forteller oss noe om hvem som eier det, hvilken spesifikke ting det er, eller hvor mange det er. Vi deler determinativ inn i flere undergrupper. Eiendomsord (possessiver) viser eierskap, som 'min', 'din' eller 'vår'. På norsk kan disse stå både foran og bak substantivet: 'Min bil' eller 'Bilen min'. Pekere (demonstrativer) brukes for å peke ut bestemte gjenstander, som 'denne boka' eller 'det huset'. Mengdeord (kvantorer) forteller om antall eller mengde, for eksempel 'to', 'mange', 'noen' eller 'all'. Grunntallene regnes også inn i denne kategorien. Determinativene er svært viktige fordi de setter rammene for substantivet. Alle determinativ må bøyes i samsvar med substantivets kjønn og tall, akkurat som adjektiver. For eksempel sier vi 'min bil' (hankjønn), men 'mitt hus' (intetkjønn). Hvis du bruker feil form, vil det umiddelbart høres feil ut for en som har norsk som morsmål. Determinativene hjelper oss å skille mellom det generelle og det spesifikke. 'En bok' er hvilken som helst bok, mens 'denne boka' er akkurat den du holder i hånden. Lær deg bøyningen av de mest brukte determinativene grundig. Særlig bøyningen av 'min/mitt/mine' og 'din/ditt/dine' er helt grunnleggende. Vær også oppmerksom på 'sin/sitt/sine', som bare brukes når subjektet eier tingen. Dette er en regel som krever mye trening. Ved å mestre determinativene får du full kontroll på substantiv-frasene dine. De gir tekstene dine klarhet og presisjon. Prøv å se etter determinativer i bøker du leser for å se hvordan de brukes sammen med substantiv.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Eiendomsord for 'hus' (et):", options: ["min", "mi", "mitt"], a: "mitt" },
+                            { type: 'choice', q: "Hvilket ord er et mengdeord?", options: ["snill", "mange", "løpe"], a: "mange" },
+                            { type: 'boolean', q: "Determinativ må alltid passe til substantivets kjønn.", a: true },
+                            { type: 'choice', q: "Peker for noe som er rett her:", options: ["denne", "den", "de"], a: "denne" },
+                            { type: 'unscramble', q: "min / er / dette / bil", a: "dette er min bil" }
+                        ]}
+                    }
+                }
+            },
+            "Setninger": {
+                icon: "fa-diagram-project", colorClass: "bg-setninger",
+                description: "Hvordan bygge korrekte norske setninger med riktig leddplassering.",
+                items: {
+                    "Subjekt": {
+                        text: "Subjektet er en av de viktigste delene i en setning, da det representerer den eller det som utfører handlingen. Vi kan også si at subjektet er det som setningen handler om. For å finne subjektet i en setning kan vi stille spørsmålet: 'Hvem eller hva + verbalet?'. I setningen 'Læreren forklarer grammatikk', spør vi 'Hvem forklarer?', og svaret er læreren. Subjektet består som regel av et substantiv eller et pronomen. Noen ganger kan det være en hel gruppe ord som fungerer som et subjekt, for eksempel 'Den store, røde bilen'. På norsk er hovedregelen at vi må ha et synlig subjekt i nesten alle setninger. Selv når vi snakker om vær eller temperatur uten at noen utfører en handling, bruker vi ordet 'det' som et formelt subjekt. 'Det regner' eller 'Det er kaldt'. Uten et subjekt vil setningen ofte føles ufullstendig og rar for en norsktalende. Subjektet står vanligvis først i en fortellende setning, men det kan flytte på seg hvis vi starter setningen med tid eller sted. Da må subjektet flytte seg til plass nummer tre på grunn av V2-regelen. Dette kalles inversjon. Å identifisere subjektet er det første steget i å forstå setningsoppbyggingen. Subjektet bestemmer også bøyningen av verbet i mange andre språk, men i moderne norsk bøyes ikke verbet etter person. Likevel er subjektet avgjørende for betydningen. Ved å vite hvem subjektet er, unngår du misforståelser om hvem som gjør hva. Prøv å finne subjektet i setninger i avisen hver dag. Dette vil trene øyet ditt til å se strukturen raskt. Husk at i spørsmål kommer subjektet ofte rett etter verbalet. En god setning krever et tydelig subjekt. Sørg for at subjektet ditt alltid er med, selv om det bare er det lille ordet 'det'.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Finn subjektet: 'Barna leker ute.'", options: ["Barna", "leker", "ute"], a: "Barna" },
+                            { type: 'choice', q: "Finn subjektet: 'I dag skinner sola.'", options: ["I dag", "skinner", "sola"], a: "sola" },
+                            { type: 'boolean', q: "I setningen 'Det regner' er 'Det' et formelt subjekt.", a: true },
+                            { type: 'unscramble', q: "bilen / står / der", a: "bilen står der" },
+                            { type: 'choice', q: "Hva er subjektet her: 'Nå spiser vi middag'?", options: ["nå", "spiser", "vi"], a: "vi" }
+                        ]}
+                    },
+                    "Verbal": {
+                        text: "Verbalet er selve motoren i setningen og uttrykker en handling, en tilstand eller en prosess. Det består alltid av ett eller flere verb i en bestemt tid. For å finne verbalet i en setning kan vi spørre: 'Hva skjer?' eller 'Hva gjør subjektet?'. I setningen 'Barna leker', er 'leker' verbalet. Noen ganger består verbalet av flere ord, som i 'Jeg har spist'. Da utgjør begge ordene til sammen verbalet. På norsk har vi en svært streng regel som kalles V2-regelen. Den sier at i en vanlig fortellende helsetning skal det bøyde verbet (verbalet) alltid stå på plass nummer to. Dette gjelder uansett om setningen starter med subjektet eller med et annet ledd som tid eller sted. Hvis du glemmer verbalet, har du ikke lenger en korrekt norsk setning. Verbalet forteller oss også når handlingen skjer, enten det er nåtid (presens), fortid (preteritum) eller fremtid (med hjelpeverb). Derfor er det viktig at du lærer å bøye verbene korrekt. Noen ganger kan verbalet være et modalverb kombinert med en infinitiv, som i 'Jeg må sove'. Her er 'må sove' verbalet. I spørsmål uten spørreord starter vi ofte setningen med verbalet på plass nummer én. 'Sover du?'. Å mestre plasseringen av verbalet er det viktigste for å snakke flytende norsk. Hvis verbet havner på feil plass, vil det høres veldig utenlandsk ut. Bruk tid på å øve på V2-regelen i ulike typer setninger. Dette er selve ryggraden i norsk grammatikk. Prøv å skrive setninger der du starter med forskjellige ledd, men holder verbet på andreplass hver gang. Dette vil bygge en god språkfølelse. Husk at i leddsetninger er reglene for verbalet annerledes, men det lærer du mer om i kapittelet om leddsetninger.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Finn verbalet: 'Jeg har spist frokost.'", options: ["jeg", "har spist", "frokost"], a: "har spist" },
+                            { type: 'choice', q: "Hvilken plass skal verbalet ha i en helsetning?", options: ["plass 1", "plass 2", "plass 3"], a: "2" },
+                            { type: 'boolean', q: "Verbalet kan bestå av to verb.", a: true },
+                            { type: 'unscramble', q: "spiser / middag / vi", a: "vi spiser middag" },
+                            { type: 'choice', q: "Hvilket spørsmål finner verbalet?", options: ["Hva skjer?", "Hvem?", "Hvor?"], a: "Hva skjer?" }
+                        ]}
+                    },
+                    "Objekt": {
+                        text: "Objektet er det leddet i setningen som blir direkte påvirket av handlingen som subjektet utfører. Vi kaller det ofte for det direkte objektet. For å finne objektet kan vi spørre: 'Hvem eller hva + verbal + subjekt?'. I setningen 'Eirik kjøper et eple', spør vi 'Hva kjøper Eirik?', og svaret er et eple. Objektet står vanligvis etter verbalet i en norsk setning. Noen setninger kan også ha et indirekte objekt, som forteller oss hvem som mottar noe eller hvem handlingen gjøres for. I setningen 'Jeg gir deg en gave', er 'en gave' det direkte objektet, mens 'deg' er det indirekte objektet. Det indirekte objektet plasseres nesten alltid foran det direkte objektet. Ikke alle verb trenger et objekt for å fungere. Verb som 'å sove' eller 'å smile' står ofte alene med bare subjektet. Men mange andre verb, som 'å kjøpe', 'å hente' eller 'å se', krever nesten alltid et objekt for å gi full mening. Hvis du bruker et pronomen som objekt, må du huske å bruke objektformen av pronomenet. Vi sier 'Han ser meg', aldri 'Han ser jeg'. Å plassere objektet riktig er en sentral del av norsk setningsstruktur. I mer komplekse setninger kan objektet selv være en hel leddsetning. 'Jeg vet at han kommer'. Her fungerer 'at han kommer' som objektet for verbet 'vet'. Å forstå rollen til objektet hjelper deg med å bygge mer innholdsrike setninger. Tren på å skille mellom subjekt og objekt slik at du bruker de riktige formene av pronomenene. Dette vil gjøre språket ditt mye mer presist. Prøv å utvide de enkle setningene dine ved å legge til et objekt. Dette er en fin måte å øve på ordforråd i praksis. Husk at objektet mottar handlingen, mens subjektet utfører den.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Finn objektet: 'Jeg henter barna.'", options: ["jeg", "henter", "barna"], a: "barna" },
+                            { type: 'choice', q: "Finn det indirekte objektet: 'Læreren gir oss lekser.'", options: ["læreren", "oss", "lekser"], a: "oss" },
+                            { type: 'boolean', q: "Alle verb må ha et objekt.", a: false },
+                            { type: 'unscramble', q: "eple / et / spiser / han", a: "han spiser et eple" },
+                            { type: 'choice', q: "Finn det direkte objektet: 'Vi ser en film'", options: ["vi", "film", "en film"], a: "en film" }
+                        ]}
+                    },
+                    "Inversjon": {
+                        text: "Inversjon er et begrep som beskriver når vi bytter om på den vanlige rekkefølgen av subjekt og verbal i en setning. På norsk er hovedregelen at verbet skal stå på plass nummer to (V2-regelen). Hvis vi starter en setning med noe annet enn subjektet, for eksempel et adverbial om tid eller sted, må subjektet vike plass for at verbet skal beholde sin faste andreplass. I en helt vanlig setning sier vi 'Jeg spiser nå'. Her står subjektet først og verbet på plass to. Men hvis vi flytter 'nå' til starten, blir det: 'Nå spiser jeg'. Dette er inversjon. Vi bruker også denne strukturen i alle spørsmål som ikke starter med et spørreord. 'Sover du?'. Inversjon er et av de mest karakteristiske trekkene ved det norske språket og er noe av det viktigste for elever på A2-nivå å lære seg grundig. Hvis du glemmer inversjon, vil du høres unaturlig ut og det kan skape forvirring hos lytteren. Det krever mye bevisst trening å huske at 'I morgen jeg skal' er feil, og at det må hete 'I morgen skal jeg'. Inversjon skjer også i hovedsetninger som kommer etter en leddsetning. 'Siden det regner, blir jeg inne'. Her ser vi at verbet 'blir' kommer rett etter kommaet. Denne regelen gjelder konsekvent i det norske språket. Jo mer du øver på dette, jo lettere vil det gå etter hvert. Mange andre språk har ikke denne regelen, så du må kanskje minne deg selv på det ofte i starten. Tren på å starte setningene dine med ord som 'I dag', 'Her' eller 'Plutselig' for å tvinge deg selv til å bruke inversjon. Dette er nøkkelen til å mestre norsk ordstilling på et godt nivå. Når inversjonen sitter, vil språket ditt umiddelbart høres mye mer flytende ut.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Hva er riktig inversjon?", options: ["I morgen jeg kommer.", "I morgen kommer jeg."], a: "I morgen kommer jeg." },
+                            { type: 'choice', q: "Hva er riktig her?", options: ["Nå sover barna.", "Nå barna sover."], a: "Nå sover barna." },
+                            { type: 'boolean', q: "Inversjon betyr at verbalet kommer før subjektet.", a: true },
+                            { type: 'unscramble', q: "trente / i går / jeg", a: "i går trente jeg" },
+                            { type: 'choice', q: "Hvilken setning viser inversjon?", options: ["Han bor her.", "Her bor han."], a: "Her bor han." }
+                        ]}
+                    },
+                    "Adverbial": {
+                        text: "Adverbialet er det leddet i en setning som gir oss mer informasjon om omstendighetene rundt en handling eller en tilstand. Det forteller oss typisk om når noe skjer (tid), hvor noe skjer (sted), hvordan noe gjøres (måte), eller hvorfor noe skjer (årsak). Adverbialer kan bestå av bare ett ord, som 'nå', 'her' eller 'fort', eller de kan være en hel gruppe ord som 'i morgen tidlig' eller 'i den store parken'. I setningen 'Vi bor i Norge', fungerer 'i Norge' som et stedsadverbial. I setningen 'Toget går klokken åtte', er 'klokken åtte' et tidsadverbial. Vi kan ha mange adverbialer i samme setning hvis vi ønsker å være veldig detaljerte. 'Jeg trente hardt på treningssenteret i går'. Her har vi adverbialer for både måte, sted og tid. Adverbialer er veldig fleksible ledd i norsk grammatikk. De kan ofte flyttes helt frem til starten av setningen for å skape variasjon og fokus. Hvis du gjør dette, må du alltid huske på inversjonsregelen slik at verbet blir stående på plass to. 'I går trente jeg'. Ved å bruke varierte adverbialer blir tekstene dine mye rikere og mer informative for leseren. De hjelper oss å plassere hendelsene i en forståelig ramme av tid og rom. Noen adverbialer er helt nødvendige for at setningen skal gi mening, mens andre bare gir valgfri tilleggsinformasjon. Det er lurt å lære seg de vanligste tidsuttrykkene og stedspreposisjonene godt, da de fungerer som de viktigste adverbialene i dagligtalen. Ved å bruke varierte adverbialer viser du at du har et nyansert språk. Vær bevisst på hvor du plasserer dem for å oppnå best mulig flyt i setningene dine. Øv deg på å flytte adverbialer i setningen og se hvordan det påvirker trykket i det du sier.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Finn stedsadverbial: 'Vi bor i Norge.'", options: ["vi", "bor", "i Norge"], a: "i Norge" },
+                            { type: 'choice', q: "Finn tidsadverbial: 'Toget går klokken åtte.'", options: ["toget", "går", "klokken åtte"], a: "klokken åtte" },
+                            { type: 'boolean', q: "Adverbialer kan flyttes til starten av setningen.", a: true },
+                            { type: 'choice', q: "Hvilket ord er et måtesadverbial?", options: ["i går", "fort", "hjemme"], a: "fort" },
+                            { type: 'unscramble', q: "går / i / trente / jeg", a: "jeg trente i går" }
+                        ]}
+                    },
+                    "Det-setninger": {
+                        text: "Det-setninger, som vi også kaller presentasjonssetninger, er setninger der vi bruker ordet 'det' som et foreløpig subjekt. Dette gjør vi ofte når vi ønsker å presentere noe helt nytt eller uventet for den som hører på, eller når vi ikke har et naturlig handlende subjekt å starte med. Et klassisk eksempel er: 'Det sitter en fugl på taket'. Her fungerer 'det' som det formelle subjektet, mens 'en fugl' er det egentlige (reelle) subjektet som handlingen gjelder. Vi bruker også denne strukturen konsekvent når vi snakker om naturfenomener som vær, temperatur eller tid. 'Det regner', 'Det er kaldt ute', eller 'Det er mandag'. Ordet 'det' fungerer i disse tilfellene som en nødvendig plassholder fordi alle norske setninger krever et subjekt for å være grammatisk korrekte. En annen vanlig bruk av det-setninger er for å legge spesielt trykk på noe, som i 'Det er læreren som snakker nå'. Dette kalles en utbryting. For en elev på A2-nivå er det viktig å forstå at 'det' i disse tilfellene ikke nødvendigvis peker på en spesifikk ting, men fyller en strukturell plass i setningen. Hvis du skal oversette slike setninger til andre språk, vil du ofte se at ordet 'det' ikke har noen direkte oversettelse. Legg merke til at vi ofte bruker 'det er' etterfulgt av et substantiv i ubestemt form i disse setningene. Vi kan også kombinere 'det' med passiv form av verbet, som i 'Det snakkes mye her'. Å mestre det-setninger er avgjørende for å kunne beskrive situasjoner og omgivelser på en naturlig måte. Prøv å bruke denne formen når du skal starte en ny fortelling eller beskrive et bilde. Det er en av de mest brukte setningstypene i norsk hverdagsspråk. Husk at det egentlige subjektet nesten alltid kommer rett etter verbalet i disse setningene.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Velg riktig: ___ snør i dag.", options: ["det", "den", "her"], a: "det" },
+                            { type: 'choice', q: "Egentlig subjekt i 'Det sitter en mann der'?", options: ["det", "sitter", "en mann"], a: "en mann" },
+                            { type: 'boolean', q: "Vi bruker 'det' som formelt subjekt når vi snakker om vær.", a: true },
+                            { type: 'unscramble', q: "kaldt / ute / er / det", a: "det er kaldt ute" },
+                            { type: 'choice', q: "Hvilken setning er en det-setning?", options: ["Det er sola.", "Sola skinner."], a: "Det er sola." }
+                        ]}
+                    }
+                }
+            },
+            "Helsetninger": {
+                icon: "fa-comment-dots", colorClass: "bg-helsetninger",
+                description: "Komplette setninger som kan stå alene og gi full mening.",
+                items: {
+                    "Fortellende setninger": {
+                        text: "Fortellende setninger er de setningene vi bruker desidert mest i hverdagen når vi formidler informasjon, beskriver noe eller forteller en historie. En fortellende setning starter alltid med stor bokstav og skal avsluttes med punktum. Den mest grunnleggende strukturen er at subjektet kommer først, etterfulgt av verbalet på plass to, som i 'Sola skinner'. Men på norsk har vi frihet til å starte med andre ledd for å skape variasjon og bedre flyt i teksten. Hvis vi for eksempel starter med et tidsadverbial, må vi huske på V2-regelen som krever at verbet uansett beholder sin faste andreplass. 'I dag skinner sola' er derfor den korrekte måten å si det på. For elevene er det avgjørende å forstå at en fortellende setning er en selvstendig og ferdig tanke som ikke trenger støtte fra andre setninger for å bli forstått. De fungerer som selve fundamentet i alt vi skriver og sier. Ved å variere lengden og oppbyggingen av de fortellende setningene dine, kan du skape en mye bedre rytme i språket ditt. En god tekst består ofte av en blanding av korte, konsise setninger og lengre, mer forklarende setninger. Husk at vi bare kan ha én hovedhandling i hver del av en setning som er koblet sammen med konjunksjoner. Fortellende setninger brukes til alt fra enkle dagligdagse beskjeder til dype faglige forklaringer. Pass på at du ikke glemmer punktum til slutt, da det fungerer som et viktig signal til leseren om å ta en pause. Prøv å skrive fem setninger om hva du har gjort i dag ved å bruke denne formen konsekvent. Det er den beste måten å få setningsstrukturen til å sitte helt naturlig i fingrene. Husk at ordstillingen Subjekt-Verbal-Objekt er den mest nøytrale og tryggeste å bruke.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Hva slutter en fortellende setning med?", options: ["?", "!", "."], a: "." },
+                            { type: 'choice', q: "Hvilken rekkefølge er vanligst?", options: ["Subjekt - Verbal", "Verbal - Subjekt"], a: "Subjekt - Verbal" },
+                            { type: 'boolean', q: "En helsetning må gi mening alene.", a: true },
+                            { type: 'unscramble', q: "bor / i / jeg / oslo", a: "jeg bor i oslo" },
+                            { type: 'fill', q: "En setning starter med ___ bokstav.", a: "stor" }
+                        ]}
+                    },
+                    "Spørresetninger": {
+                        text: "Spørresetninger bruker vi når vi ønsker å innhente informasjon fra andre eller når vi lurer på noe selv. Vi deler disse setningene inn i to hovedgrupper: spørsmål med spørreord og ja/nei-spørsmål. Spørsmål med spørreord starter alltid med ord som hvem, hva, hvor, når, hvorfor eller hvordan. I disse setningene kommer spørreordet først på plass én, etterfulgt av verbalet på plass to, som i 'Hvor bor du?'. Ja/nei-spørsmål fungerer annerledes fordi de ikke har noe spørreord; i stedet starter vi hele setningen med selve verbet på plass én. 'Bor du i Norge?' er et typisk eksempel på dette. Her ser vi at subjektet og verbalet har byttet plass sammenlignet med en vanlig fortellende setning. Alle spørresetninger må avsluttes med et spørsmålstegn for å tydelig signalisere til leseren at dette er et spørsmål som krever et svar. For deg som lærer norsk, er det viktig å øve på det stigende tonefallet i slutten av spørsmålet når du snakker. Spørreordene hjelper oss å spesifisere nøyaktig hva slags informasjon vi leter etter. 'Hvem' brukes om personer, 'hva' om ting eller handlinger, og 'hvorfor' når vi vil vite årsaken til noe. Det er helt nødvendig å lære seg alle spørreordene grundig for å kunne føre en normal samtale. Noen ganger kan vi kombinere spørreordet med andre ord for å være enda mer presise, som i 'hvor gammel' eller 'hvor mange'. I høflige forespørsler bruker vi ofte hjelpeverb som 'kan' eller 'vil' for å myke opp spørsmålet. 'Kan du hjelpe meg med dette?'. Tren på å lage både åpne og lukkede spørsmål i hverdagen din. Dette er selve nøkkelen til å holde en god sosial samtale i gang med andre. Husk at selv i spørsmål med spørreord, følger vi V2-regelen så sant det er mulig.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Ja/nei-spørsmål starter med:", options: ["subjekt", "verbal", "spørreord"], a: "verbal" },
+                            { type: 'choice', q: "Spørreord for sted:", options: ["hvem", "hva", "hvor"], a: "hvor" },
+                            { type: 'boolean', q: "Ja/nei-spørsmål starter alltid med verbet.", a: true },
+                            { type: 'unscramble', q: "du / er / sulten / ?", a: "er du sulten ?" },
+                            { type: 'choice', q: "Hva mangler: '___ heter du?'", options: ["hvem", "hva", "hvor"], a: "hva" }
+                        ]}
+                    },
+                    "Imperativsetninger": {
+                        text: "Imperativsetninger brukes i situasjoner der vi ønsker å gi en direkte ordre, en beskjed, et godt råd eller en instruksjon. Dette er en svært effektiv og tydelig form for kommunikasjon som går rett på sak. Det som skiller imperativsetninger fra de fleste andre setninger, er at de ofte mangler et synlig subjekt. Dette er fordi det er underforstått at man snakker direkte til personen som står rett foran seg. I disse setningene står verbet alltid i sin aller korteste form, som vi kaller imperativ. Vi danner imperativ ved å ta bort endelsen -e fra infinitiven av verbet. Hvis infinitiven er 'å vaske', blir imperativen 'vask!'. Hvis verbet er 'å snakke', blir det 'snakk!'. En imperativsetning starter nesten alltid med dette korte verbet helt først: 'Lukk døra!' eller 'Kom hit!'. Vi bruker veldig ofte et utropstegn etter slike setninger for å understreke at det er en kommando eller en viktig beskjed. Imperativ er utrolig nyttig i mange praktiske situasjoner i livet, for eksempel når man følger en matoppskrift ('Rør rundt i gryta') eller i trafikken ('Stopp!'). Det kan også brukes til å gi vennlige og omsorgsfulle råd, som 'Vær forsiktig på veien'. Pass på at du ikke bruker imperativ for mye hvis du ønsker å være veldig høflig; i slike tilfeller er det ofte bedre å bruke et spørsmål eller et modalverb. Men i instruksjoner eller nødsituasjoner er imperativ den helt korrekte formen å bruke. Lær deg imperativ-formen av de vanligste hverdagsverbene dine. Det er en enkel form å lære fordi den er så kort og konsis. Husk at for verb som slutter på en annen vokal enn -e, er infinitiv og imperativ ofte helt like, som i 'å gå' som blir 'gå!'. Bruk imperativ bevisst for å bli mer tydelig i din kommunikasjon.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Hva er imperativ av 'å vaske'?", options: ["vasker", "vask", "vasket"], a: "vask" },
+                            { type: 'choice', q: "Hva er imperativ av 'å snakke'?", options: ["snakker", "snakk", "snakke"], a: "snakk" },
+                            { type: 'boolean', q: "Imperativsetninger starter ofte med verbet.", a: true },
+                            { type: 'unscramble', q: "døra / ! / lukk", a: "lukk døra !" },
+                            { type: 'choice', q: "Hvor brukes imperativ?", options: ["matoppskrifter", "nyheter"], a: "matoppskrifter" }
+                        ]}
+                    }
+                }
+            },
+            "Leddsetninger": {
+                icon: "fa-link", colorClass: "bg-leddsetninger",
+                description: "Setninger som fungerer som en del av en annen setning og gir tilleggsinfo.",
+                items: {
+                    "Ordstilling i leddsetning": {
+                        text: "Ordstillingen i leddsetninger er et av de mest sentrale temaene for alle som ønsker å nå et høyere nivå i norsk. En leddsetning fungerer annerledes enn en helsetning, spesielt når det gjelder plasseringen av adverb som 'ikke', 'alltid' eller 'aldri'. Mens vi i en helsetning setter 'ikke' etter det bøyde verbet ('Jeg kommer ikke'), skal 'ikke' i en leddsetning stå foran verbet. For å huske dette bruker vi ofte den kjente huskeregelen S-A-V. Den står for Subjunksjon – Adverbial – Verbal. Et godt eksempel på dette er setningen: 'Jeg er trist fordi jeg ikke kan komme'. Her ser vi at 'fordi' er subjunksjonen som starter leddsetningen, etterfulgt av subjektet 'jeg', så kommer adverbet 'ikke', og til slutt kommer verbalet 'kan'. Å mestre denne lille, men viktige forskjellen er helt avgjørende for å kunne skrive og snakke korrekt norsk. Mange gjør feil her fordi de prøver å bruke de samme reglene som i en vanlig helsetning. Tenk på ordet 'ikke' som en vakt som alltid må stå foran verbet når du er inne i en leddsetning. Denne regelen gjelder for alle typer leddsetninger, enten de starter med 'at', 'fordi', 'hvis' eller 'som'. Det krever mye mengdetrening før denne ordstillingen føles helt naturlig. Prøv å skrive små par med setninger der du flytter på 'ikke' for å se forskjellen. 'Jeg sover ikke' (helsetning) mot 'Han sier at jeg ikke sover' (leddsetning). Legg merke til hvordan betydningen er den samme, men den grammatiske strukturen endres helt. Dette er en av de vanligste feilkildene på språkprøver, så det lønner seg å være ekstra nøye her. Når du ser en subjunksjon, bør du umiddelbart tenke på S-A-V regelen. Jo mer du øver, jo raskere vil du identifisere leddsetningene i det du leser og hører hver dag.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Riktig leddsetning:", options: ["fordi jeg ikke kommer", "fordi jeg kommer ikke"], a: "fordi jeg ikke kommer" },
+                            { type: 'choice', q: "Hva står A for i S-A-V?", options: ["adjektiv", "adverbial", "artikkel"], a: "adverbial" },
+                            { type: 'boolean', q: "I leddsetninger står 'ikke' før verbet.", a: true },
+                            { type: 'unscramble', q: "at / kommer / han / vet / jeg", a: "jeg vet at han kommer" },
+                            { type: 'choice', q: "Hva starter en leddsetning?", options: ["konjunksjon", "subjunksjon", "verbal"], a: "subjunksjon" }
+                        ]}
+                    },
+                    "Adverbiale leddsetninger": {
+                        text: "Adverbiale leddsetninger fungerer som et utfyllende ledd til hovedsetningen og gir oss viktig informasjon om tid, årsak, vilkår eller hensikt. De starter alltid med en subjunksjon som forteller leseren hva slags type informasjon som er på vei. Hvis du bruker 'fordi', forklarer du årsaken til noe: 'Jeg blir hjemme fordi jeg er syk'. Hvis du bruker 'hvis', presenterer du et vilkår som må være oppfylt: 'Jeg blir glad hvis du kommer'. En av de store fordelene med adverbiale leddsetninger er at de er fleksible og kan plasseres både før og etter hovedsetningen. Hvis du velger å sette leddsetningen først, må du imidlertid huske på to viktige ting. For det første må du alltid sette et komma mellom leddsetningen og hovedsetningen. For det andre skjer det en inversjon i hovedsetningen, slik at verbet kommer rett etter kommaet. Et eksempel på dette er: 'Fordi jeg er syk, blir jeg hjemme'. Her ser vi at 'blir' kommer før 'jeg' i den andre delen av setningen. Dette gir deg som språkbruker gode verktøy for å forklare kompliserte sammenhenger og begrunne dine egne meninger på en strukturert måte. Vanlige tids-subjunksjoner inkluderer ord som 'når', 'da', 'før' og 'etter at'. Ved å koble sammen tanker med disse ordene, viser du en dypere forståelse for logikken i det norske språket. Det er viktig å ikke blande sammen konjunksjoner og subjunksjoner, da de følger helt ulike regler for ordstilling. Tren aktivt på å starte setningene dine med 'Hvis' eller 'Fordi' for å få inversjonen i hovedsetningen til å sitte i fingrene. Dette er en av de mest brukte konstruksjonene i norsk dagligtale. Jo flere slike bindeord du mestrer, jo mer variert og profesjonelt vil språket ditt fremstå. Husk at kommaet fungerer som en viktig veiviser for leseren.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Hvis leddsetningen står først, bruker vi:", options: ["komma", "punktum", "kolon"], a: "komma" },
+                            { type: 'boolean', q: "Årsaksleddsetninger starter ofte med 'fordi'.", a: true },
+                            { type: 'choice', q: "Fullfør: 'Hvis det regner, ___ jeg hjemme.'", options: ["blir", "jeg blir"], a: "blir" },
+                            { type: 'unscramble', q: "glad / hvis / du / kommer / blir / jeg", a: "hvis du kommer blir jeg glad" },
+                            { type: 'choice', q: "Mangler: 'Jeg blir her ___ du kommer.'", options: ["fordi", "hvis", "til"], a: "til" }
+                        ]}
+                    },
+                    "SOM-setninger": {
+                        text: "Som-setninger er en svært nyttig type leddsetning som vi bruker for å beskrive et substantiv eller et pronomen som vi nettopp har nevnt i samtalen. Ordet 'som' fungerer her som et bindeledd som peker direkte tilbake på det ordet det skal utdype. Vi bruker disse setningene for å gi mer detaljert informasjon uten at vi trenger å starte en helt ny setning hver eneste gang. Et klassisk eksempel er: 'Jeg har en bror som bor i USA'. Her beskriver hele leddsetningen 'som bor i USA' hvilken bror det er snakk om. En viktig huskeregel er at ordet 'som' ofte fungerer som selve subjektet inne i sin egen leddsetning. Hvis du ønsker å legge til en nektelse som 'ikke' i en som-setning, må du følge den vanlige leddsetningsregelen (S-A-V). 'Jeg har en bror som ikke bor i USA' er derfor den korrekte formen. Som-setninger er utrolig vanlige i det norske språket og er et uunnværlig verktøy for å skape et mer flytende og beskrivende språk. Vi bruker dem både når vi snakker om mennesker og om døde gjenstander. 'Boka som jeg leser nå, er veldig spennende'. Her ser vi hvordan 'som' peker tilbake på boka. I grammatikken blir disse ofte kalt for relativsetninger. De er helt nødvendige når vi skal spesifisere nøyaktig hvilken person eller ting vi mener blant mange mulige alternativer. Uten 'som' ville språket vårt høres veldig enkelt og stakkato ut. Ved å bruke 'som' binder du informasjonen sammen på en logisk måte for den som hører på. Vær nøye med å plassere som-setningen rett etter det ordet den beskriver for å unngå misforståelser. Prøv å øve på å slå sammen to korte setninger til én ved hjelp av ordet 'som'. Dette vil umiddelbart heve det skriftlige nivået ditt. Husk at 'som' aldri endrer form, uansett hva det peker på.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Jeg har en bil ___ er rød.", options: ["at", "som", "om"], a: "som" },
+                            { type: 'boolean', q: "'Som' kan erstatte subjektet i leddsetningen.", a: true },
+                            { type: 'choice', q: "Hvor står 'ikke'?", options: ["som ikke er", "som er ikke"], a: "som ikke er" },
+                            { type: 'unscramble', q: "læreren / flink / er / som / snakker", a: "læreren som snakker er flink" },
+                            { type: 'choice', q: "Hva beskriver en som-setning?", options: ["et verb", "et substantiv"], a: "et substantiv" }
+                        ]}
+                    }
+                }
+            },
+            "Sammensatte ord": {
+                icon: "fa-puzzle-piece", colorClass: "bg-sammensatte",
+                description: "Når flere ord blir til ett nytt ord med en spesifikk betydning.",
+                items: {
+                    "Etterleddet": {
+                        text: "Norsk er et språk som er kjent for sin evne til å lime sammen ord for å skape nye og presise betydninger. I en slik sammensetning kalles det siste ordet for etterleddet, og det er dette ordet som bærer den viktigste grammatiske informasjonen for hele ordet. Det er nemlig etterleddet som bestemmer hvilket kjønn det sammensatte ordet skal ha. Selv om forleddet i ordet er hankjønn og etterleddet er intetkjønn, vil hele det nye ordet bli intetkjønn. Et tydelig eksempel på dette er: en skole (hankjønn) + et kjøkken (intetkjønn) = et skolekjøkken. Dette er en svært viktig regel å kunne, fordi det også er etterleddet som vi bøyer når vi skal snakke i flertall eller i bestemt form. Vi sier for eksempel 'mange skolekjøkken', aldri 'mange skoler-kjøkken'. For alle som lærer norsk, er dette egentlig en veldig god nyhet: Hvis du bare kjenner kjønnet på det aller siste ordet i en lang sammensetning, så kjenner du automatisk kjønnet på hele ordet. Dette forenkler bruken av artikler og adjektivbøyninger betraktelig. Noen norske ord kan bli utrolig lange, men den grammatiske logikken forblir alltid den samme. Etterleddet forteller oss hva tingen faktisk er, mens forleddet spesifiserer hvilken type det er snakk om. En 'kaffekopp' er først og fremst en kopp, ikke en type kaffe. Tren på å identifisere etterleddet i ordene du møter når du leser avisen eller bøker. Da vil du mye raskere forstå betydningen av nye og ukjente ord. Husk at på norsk skal sammensatte ord alltid skrives som ett ord uten mellomrom. Feilaktig deling av ord er en av de vanligste skrivefeilene, så vær nøye med å fjerne mellomrommet mellom ordene dine. Dette vil gjøre skriftlig norsk mye mer korrekt og profesjonell. Prøv å lage dine egne sammensatte ord for å se hvordan logikken fungerer i praksis.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Kjønn på 'skolekjøkken'?", options: ["en", "et"], a: "et" },
+                            { type: 'choice', q: "Hvilket ledd bestemmer kjønnet?", options: ["forleddet", "etterleddet"], a: "etterleddet" },
+                            { type: 'boolean', q: "Vi bøyer etterleddet i flertall.", a: true },
+                            { type: 'unscramble', q: "tom / er / kaffekoppen", a: "kaffekoppen er tom" },
+                            { type: 'choice', q: "Hva er etterleddet i 'fotball'?", options: ["fot", "ball"], a: "ball" }
+                        ]}
+                    },
+                    "Fuger": {
+                        text: "Fuger er små bokstaver, oftest -s- eller -e-, som vi noen ganger må sette inn mellom to ord når vi limer dem sammen til en sammensetning. Formålet med disse fugene er ofte å gjøre det nye ordet lettere å uttale, eller fordi det følger lange språklige tradisjoner i Norge. Typiske eksempler på dette er ord som 'land-s-mann' eller 'barn-e-hage'. Selv om det kan virke tilfeldig når vi bruker fuger, finnes det faktisk noen generelle regler du kan støtte deg til. Fuge-s er for eksempel veldig vanlig etter ord som slutter på visse endelser som -het, -else, -dom eller -skap. Vi sier derfor 'kjærlighet-s-brev' og 'ungdom-s-skole'. Fuge-e brukes ofte etter ord som har med dyr eller planter å gjøre, eller ord som har en eldre form i språkhistorien vår, som i 'hund-e-mat'. For en elev som er på A2-nivå, er det viktigste å være klar over at disse ekstra bokstavene finnes. Da vil du ikke bli forvirret når du ser en ekstra 's' midt inne i et ord du ellers kjenner betydningen av. Hvis du er usikker på om et ord skal ha en fuge eller ikke, er det alltid lurt å sjekke i en offisiell ordbok. Over tid vil du utvikle en naturlig følelse for hva som høres riktig ut når du snakker. Fugene endrer aldri selve betydningen av ordene, de fungerer bare som et slags språklig lim for strukturens skyld. Det finnes også mange sammensetninger som ikke bruker noen fuge i det hele tatt, som for eksempel 'solbriller'. Dette kaller vi for en direkte sammensetning. Det er viktig å ikke legge til fuger der de ikke hører hjemme, da det kan endre flyten i ordet. Prøv å legg merke til ord med fuge-s i tekster du leser hver dag og skriv dem gjerne ned. Dette vil hjelpe deg å kjenne igjen mønsteret over tid. Husk at fugen alltid hører til slutten av det første ordet i sammensetningen.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Fuge i 'barn_hage'?", options: ["s", "e", "ingen"], a: "e" },
+                            { type: 'choice', q: "Fuge i 'land_mann'?", options: ["s", "e", "ingen"], a: "s" },
+                            { type: 'boolean', q: "Fuge-s er vanlig etter ord på -het.", a: true },
+                            { type: 'unscramble', q: "barnehagen / i / barna / er", a: "barna er i barnehagen" },
+                            { type: 'choice', q: "Hvilken fuge er i 'følelse_liv'?", options: ["s", "e", "ingen"], a: "s" }
+                        ]}
+                    }
+                }
+            },
+            "Tegnsetting": {
+                icon: "fa-quote-left", colorClass: "bg-tegnsetting",
+                description: "Lær de viktigste reglene for bruk av komma, kolon og utropstegn.",
+                items: {
+                    "Komma": {
+                        text: "Komma er kanskje det tegnsettingssymbolet som skaper mest hodebry for elever, men det følger faktisk faste og logiske regler på norsk som er svært nyttige å lære seg tidlig. Vi bruker komma primært for å hjelpe leseren med å dele opp informasjonen i setningen i mindre og mer håndterbare biter. Det finnes tre hovedregler som er spesielt viktige på A2-nivå. Den første er bruk av komma i en oppramsing: 'Jeg kjøpte epler, pærer og bananer'. Legg merke til at vi aldri setter komma før det siste ordet 'og'. Den andre regelen gjelder mellom to fullstendige helsetninger som er bundet sammen med konjunksjoner som 'men', 'for', 'eller' eller 'så'. 'Jeg er veldig trøtt, men jeg vil gjerne se ferdig filmen'. Den tredje og kanskje viktigste regelen for viderekomne er å sette komma etter en leddsetning som står helt først i en setning: 'Hvis det regner i morgen, blir jeg sittende inne og lese'. Ved å plassere kommaet på riktig sted unngår du misforståelser og gjør teksten din mye mer profesjonell og lettlest for andre. Komma kan i visse tilfeller endre meningen i en setning totalt, noe som understreker hvor viktig det er med korrekt tegnsetting. Vi bruker generelt ikke komma like hyppig på norsk som i en del andre europeiske språk, så pass på at du ikke overdriver bruken. En god huskeregel er at kommaet markerer en naturlig liten pause i tanken eller introduksjonen av en ny del av informasjonen. Tren på å lese setningene dine høyt for å kjenne etter hvor det føles naturlig å legge inn en liten stopp. Husk at vi aldri bruker komma mellom subjektet og verbalet i en enkel setning. Sørg for at du lærer deg regelen om komma etter leddsetning spesielt godt, da dette er en av de aller vanligste feilene på språkprøver. Riktig bruk av komma viser at du har god kontroll på den norske setningsstrukturen.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Komma i 'Epler_ pærer og bananer'?", options: [",", ".", ":"], a: "," },
+                            { type: 'boolean', q: "Vi bruker ofte komma før ordet 'men'.", a: true },
+                            { type: 'choice', q: "Plassering: 'Hvis du kommer _ blir jeg glad.'", options: [",", ":", "."], a: "," },
+                            { type: 'unscramble', q: "te / og / kake / is / ,", a: "is , kake og te" },
+                            { type: 'choice', q: "Hvor trengs komma?", options: ["før 'og'", "før 'men'", "før 'for'"], a: "før 'men'" }
+                        ]}
+                    },
+                    "Kolon": {
+                        text: "Kolon er et tegn som fungerer som en spennende døråpner i tekstene dine. Det gir et signal til leseren om at 'nå kommer det noe mer som skal utdype eller forklare det jeg nettopp har skrevet'. På A2-nivå bruker vi kolon hovedsakelig i to bestemte situasjoner som det er lurt å mestre. For det første bruker vi alltid kolon rett før vi starter en oppramsing eller presenterer en liste med ting. 'Jeg skal besøke tre kjente byer i sommer: Oslo, Bergen og Trondheim'. For det andre bruker vi kolon foran et direkte sitat, når vi skal gjengi nøyaktig hva en person har sagt eller skrevet. 'Læreren sa til klassen: Husk å gjøre leksene deres til i morgen!'. En sjelden gang kan vi også bruke kolon før en grundig forklaring som utdyper påstanden vi akkurat kom med. For elevene er kolon et ryddig og oversiktlig tegn som hjelper dem med å organisere informasjonen på en logisk måte, spesielt i mer formelle sammenhenger som brev, rapporter eller presentasjoner. En viktig liten detalj er bruken av stor eller liten bokstav etter kolon. Du skal bruke liten forbokstav hvis det som følger bare er en liste med ord eller ikke er en fullstendig setning. Hvis det derimot følger en helt ny og selvstendig setning etter kolonet, skal du starte med stor bokstav. Dette er en detalj som mange glemmer, men som gir et veldig godt inntrykk hvis du gjør det riktig. Kolon skaper en naturlig forventning hos den som leser og gjør at informasjonen din fremstår som bedre strukturert. Det er et mye bedre valg å bruke kolon enn bare å fortsette setningen uten noe tegn i det hele tatt. Pass på at du ikke forveksler kolon med semikolon, da semikolon brukes på en helt annen måte og sjelden er nødvendig å kunne på A2-nivå. Bruk kolon aktivt når du lager planer eller handlelister i hverdagen din for å øve. Husk også at det alltid skal være et mellomrom etter et kolon, men aldri foran det.",
+                        quiz: { questions: [
+                            { type: 'choice', q: "Tegn i 'Han sa _ Hei!'", options: [":", ",", "!"], a: ":" },
+                            { type: 'boolean', q: "Kolon brukes foran en oppramsing.", a: true },
+                            { type: 'choice', q: "Hvilket tegn mangler: 'Menyen har tre retter _ suppe, fisk og kake.'", options: [":", ",", "."], a: ":" },
+                            { type: 'unscramble', q: "sa / hei / : / han", a: "han sa : hei" },
+                            { type: 'choice', q: "Hvilken funksjon har kolon?", options: ["slutte setning", "åpne liste"], a: "åpne liste" }
+                        ]}
+                    }
+                }
+            }
+        };
+
+        function updateBreadcrumbs(path = []) {
+            const nav = document.getElementById('breadcrumb-nav');
+            if (path.length === 0) { nav.classList.add('hidden'); return; }
+            nav.classList.remove('hidden');
+            let html = '<span class="breadcrumb-item cursor-pointer hover:text-indigo-600 transition-colors" onclick="showMainMenu()">Hjem</span>';
+            path.forEach((item, idx) => {
+                const isLast = idx === path.length - 1;
+                html += `<span class="breadcrumb-item ${isLast ? 'text-slate-900 font-semibold' : 'cursor-pointer hover:text-indigo-600 transition-colors'}" 
+                         onclick="${isLast ? '' : item.action}">${item.name}</span>`;
+            });
+            nav.innerHTML = html;
+        }
+
+        function showMainMenu() {
+            clearInterval(timerInterval);
+            document.getElementById('main-menu').classList.remove('hidden');
+            document.getElementById('sub-menu').classList.add('hidden');
+            document.getElementById('content-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('result-view').classList.add('hidden');
+            updateBreadcrumbs();
+            updateScoreDisplay();
+
+            const menu = document.getElementById('main-menu');
+            menu.innerHTML = '';
+            Object.keys(grammarData).forEach(cat => {
+                const data = grammarData[cat];
+                const tile = document.createElement('div');
+                tile.className = `tile-card p-8 rounded-3xl flex flex-col items-center text-center ${data.colorClass} shadow-sm border`;
+                tile.onclick = () => showSubMenu(cat);
+                tile.innerHTML = `
+                    <div class="mb-4 w-16 h-16 rounded-2xl bg-white/60 flex items-center justify-center text-2xl shadow-sm">
+                        <i class="fas ${data.icon}"></i>
+                    </div>
+                    <h2 class="text-xl font-bold mb-2">${cat}</h2>
+                    <p class="text-xs opacity-80 leading-relaxed">${data.description}</p>
+                `;
+                menu.appendChild(tile);
+            });
+        }
+
+        function showSubMenu(category) {
+            currentCategory = category;
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('sub-menu').classList.remove('hidden');
+            document.getElementById('content-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('result-view').classList.add('hidden');
+            updateBreadcrumbs([{ name: category, action: `showSubMenu('${category}')` }]);
+            document.getElementById('sub-menu-title').innerText = category;
+            
+            const grid = document.getElementById('sub-menu-grid');
+            grid.innerHTML = '';
+            Object.keys(grammarData[category].items).forEach(item => {
+                const tile = document.createElement('div');
+                tile.className = `tile-card p-6 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-between group`;
+                tile.onclick = () => showContent(category, item);
+                tile.innerHTML = `
+                    <span class="font-semibold text-slate-700">${item}</span>
+                    <i class="fas fa-chevron-right text-slate-300 group-hover:text-indigo-500 transition-all"></i>
+                `;
+                grid.appendChild(tile);
+            });
+        }
+
+        function showContent(category, item) {
+            currentCategory = category;
+            currentItem = item;
+            const data = grammarData[category].items[item];
+            document.getElementById('sub-menu').classList.add('hidden');
+            document.getElementById('content-view').classList.remove('hidden');
+            updateBreadcrumbs([{ name: category, action: `showSubMenu('${category}')` }, { name: item, action: '' }]);
+            document.getElementById('content-title').innerText = item;
+            document.getElementById('content-body').innerText = data.text;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function goBackToSubMenu() { showSubMenu(currentCategory); }
+        function goBackToContent() { showContent(currentCategory, currentItem); }
+
+        function startQuizFromContent() {
+            currentSubIndex = 0;
+            sessionScore = 0;
+            correctInSession = 0;
+            document.getElementById('content-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+            document.getElementById('quiz-task-title').innerText = currentItem;
+            renderQuizStep();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 20; potentialPoints = 100;
+            updateTimerUI();
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft >= 0) {
+                    const elapsed = 20 - timeLeft;
+                    potentialPoints = Math.max(10, 100 - (Math.floor(elapsed / 2) * 10));
+                } else { potentialPoints = 10; }
+                updateTimerUI();
+                if (timeLeft < -60) clearInterval(timerInterval);
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            document.getElementById('quiz-timer-text').innerText = timeLeft > 0 ? `${timeLeft}s` : "0s";
+            document.getElementById('potential-score').innerText = potentialPoints;
+            const bar = document.getElementById('timer-progress');
+            bar.style.width = `${Math.max(0, (timeLeft / 20) * 100)}%`;
+            bar.className = timeLeft <= 5 ? 'h-full bg-rose-300 timer-bar' : 'h-full bg-indigo-500 timer-bar';
+        }
+
+        function renderQuizStep() {
+            const quiz = grammarData[currentCategory].items[currentItem].quiz;
+            const q = quiz.questions[currentSubIndex];
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+            document.getElementById('quiz-progress-text').innerText = `Oppgave ${currentSubIndex + 1} av 5`;
+            
+            const div = document.createElement('div');
+            div.className = "content-area";
+            
+            if (q.type === 'fill') {
+                div.innerHTML = `
+                    <p class="text-2xl mb-8 font-semibold text-slate-800 leading-snug">${q.q.replace('___', '<span class="inline-block px-4 py-1 bg-indigo-50 border-b-2 border-indigo-200 text-indigo-600 font-mono">______</span>')}</p>
+                    <input type="text" id="quiz-input" class="w-full p-5 border-2 rounded-2xl bg-slate-50 outline-none text-xl focus:border-indigo-400 focus:bg-white transition-all shadow-inner" placeholder="Skriv svaret ditt her...">
+                `;
+                document.getElementById('next-btn').style.display = 'block';
+            } else if (q.type === 'boolean') {
+                div.innerHTML = `
+                    <p class="text-2xl mb-12 font-semibold text-slate-800 leading-snug">${q.q}</p>
+                    <div class="grid grid-cols-2 gap-6">
+                        <button onclick="handleFeedback(${q.a === true})" class="p-8 rounded-3xl border-2 border-slate-100 bg-white hover:border-emerald-200 hover:bg-emerald-50 transition-all font-bold text-lg">SANT</button>
+                        <button onclick="handleFeedback(${q.a === false})" class="p-8 rounded-3xl border-2 border-slate-100 bg-white hover:border-rose-200 hover:bg-rose-50 transition-all font-bold text-lg">USANT</button>
+                    </div>
+                `;
+                document.getElementById('next-btn').style.display = 'none';
+            } else if (q.type === 'choice') {
+                const opts = q.options.map(o => `
+                    <button onclick="handleFeedback('${o}' === '${q.a}')" class="w-full p-5 mb-4 text-left rounded-2xl border-2 border-slate-100 bg-white hover:border-indigo-200 hover:bg-indigo-50 transition-all font-semibold">
+                        ${o}
+                    </button>
+                `).join('');
+                div.innerHTML = `<p class="text-2xl mb-8 font-semibold text-slate-800 leading-snug">${q.q}</p>${opts}`;
+                document.getElementById('next-btn').style.display = 'none';
+            } else if (q.type === 'unscramble') {
+                quizAnswers = [];
+                const words = q.q.split(' / ').sort(() => Math.random() - 0.5);
+                const buttons = words.map(w => `<button class="word-pill m-1" onclick="addWord(this)">${w}</button>`).join('');
+                div.innerHTML = `
+                    <p class="text-xs text-slate-400 mb-6 uppercase font-bold tracking-widest">Klikk på ordene i rekkefølge:</p>
+                    <div id="drop-zone" class="drop-zone mb-8"></div>
+                    <div class="flex flex-wrap justify-center">${buttons}</div>
+                    <button onclick="renderQuizStep()" class="mt-8 mx-auto block text-xs font-bold text-slate-400 hover:text-indigo-500 uppercase">Nullstill</button>
+                `;
+                document.getElementById('next-btn').style.display = 'block';
+            }
+            container.appendChild(div);
+            if (q.type === 'fill') {
+                const inp = document.getElementById('quiz-input'); 
+                inp.focus();
+                inp.onkeypress = (e) => { if(e.key==='Enter') checkAnswer(); };
+            }
+            startTimer();
+        }
+
+        function addWord(btn) {
+            const zone = document.getElementById('drop-zone');
+            quizAnswers.push(btn.innerText);
+            const pill = document.createElement('span');
+            pill.className = "word-pill m-1 bg-white border-indigo-200 text-indigo-700 shadow-sm";
+            pill.innerText = btn.innerText;
+            zone.appendChild(pill);
+            btn.style.visibility = 'hidden';
+        }
+
+        function checkAnswer() {
+            const quiz = grammarData[currentCategory].items[currentItem].quiz;
+            const q = quiz.questions[currentSubIndex];
+            let correct = false;
+            if (q.type === 'fill') {
+                correct = (document.getElementById('quiz-input').value.trim().toLowerCase() === q.a.toLowerCase());
+            } else if (q.type === 'unscramble') {
+                correct = (quizAnswers.join(' ').toLowerCase() === q.a.toLowerCase());
+            }
+            handleFeedback(correct);
+        }
+
+        function handleFeedback(isCorrect) {
+            clearInterval(timerInterval);
+            const toast = document.getElementById('feedback-toast');
+            toast.classList.remove('hidden', 'feedback-correct', 'feedback-wrong');
+            
+            if (isCorrect) {
+                sessionScore += potentialPoints; totalScore += potentialPoints; correctInSession++;
+                toast.classList.add('feedback-correct');
+                document.getElementById('feedback-title').innerText = "Riktig!";
+                document.getElementById('feedback-msg').innerText = `+${potentialPoints} poeng.`;
+                document.getElementById('feedback-icon').className = "fas fa-check-circle";
+            } else {
+                toast.classList.add('feedback-wrong');
+                document.getElementById('feedback-title').innerText = "Feil";
+                const q = grammarData[currentCategory].items[currentItem].quiz.questions[currentSubIndex];
+                let displayA = q.a === true ? "Sant" : q.a === false ? "Usant" : q.a;
+                document.getElementById('feedback-msg').innerText = `Riktig svar var: ${displayA}`;
+                document.getElementById('feedback-icon').className = "fas fa-times-circle";
+            }
+            updateScoreDisplay();
+            setTimeout(() => { toast.classList.add('hidden'); nextStep(); }, 2000);
+        }
+
+        function nextStep() {
+            currentSubIndex++;
+            if (currentSubIndex >= 5) showResults(); else renderQuizStep();
+        }
+
+        function showResults() {
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('result-view').classList.remove('hidden');
+            document.getElementById('res-cat').innerText = currentItem;
+            document.getElementById('res-score').innerText = sessionScore;
+            document.getElementById('res-correct').innerText = `${correctInSession}/5`;
+            
+            const feedbackText = document.getElementById('res-feedback-text');
+            if (correctInSession === 5) feedbackText.innerText = "Fantastisk! Alt var riktig.";
+            else if (correctInSession >= 3) feedbackText.innerText = "Bra jobbet! Du har god kontroll på dette temaet.";
+            else feedbackText.innerText = "Her må du øve litt mer. Les fagteksten en gang til og prøv igjen!";
+        }
+        
+        window.onload = showMainMenu;
+    </script>
+</body>
+</html>
